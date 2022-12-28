@@ -1,0 +1,14 @@
+# stack
+.stack-work/
+*~
+
+# cabal
+dist-newstyle/
+cabal.project.local
+cabal.project.local~
+
+# task
+.task/
+
+# ddump-splices
+*.dump-splices

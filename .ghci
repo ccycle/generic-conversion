@@ -1,0 +1,2 @@
+:set -XQuasiQuotes
+:set -XTemplateHaskell

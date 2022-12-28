@@ -1,0 +1,68 @@
+name:                generic-conversion
+version:             0.1.0
+github:              "ccycle/generic-conversion"
+license:             BSD3
+author:              "ccycle"
+maintainer:          "ccycle713@gmail.com"
+copyright:           "2022 ccycle"
+
+extra-source-files:
+- README.md
+- CHANGELOG.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/ccycle/generic-conversion#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- template-haskell
+
+ghc-options:
+- -Wall
+- -Wmissing-methods
+- -Wcompat
+- -Widentities
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wmissing-home-modules
+- -Wpartial-fields
+- -Wredundant-constraints
+
+default-extensions:
+- DefaultSignatures
+- DeriveGeneric
+- DerivingStrategies
+- FlexibleContexts
+- FlexibleInstances
+- MultiParamTypeClasses
+- RecordWildCards
+- StandaloneDeriving
+- TypeApplications
+- TypeOperators
+
+library:
+  source-dirs: src
+
+tests:
+  test:
+    main:                Tasty.hs
+    source-dirs:         test
+    ghc-options:
+    - -ddump-splices
+    - -ddump-to-file
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - generic-conversion
+    - text
+    - template-haskell
+    - tasty
+    - tasty-hunit
+    - tasty-quickcheck
