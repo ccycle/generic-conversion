@@ -1,0 +1,111 @@
+version: '3'
+
+vars:
+  LTS: '{{.LTS | default "20.3"}}'
+  BUILD_ARGS: '{{.BUILD_ARGS | default "-O0"}}'
+  TARGETS: '{{.TARGETS}}'
+
+tasks:
+  hpack:
+    cmds:
+      - hpack -f
+
+  stack2cabal:
+    desc: "Convert stack projects to cabal.project + cabal.project.freeze. Example: `task hs:stack2cabal LTS=20.3`"
+    vars:
+      STACK_FILE: stack-lts-{{.LTS}}.yaml
+      CABAL_PROJECT_FILE: ./autogen/cabal-lts-{{.LTS}}.project
+    cmds:
+      - mkdir -p autogen
+      - 'stack2cabal --no-run-hpack -f {{.STACK_FILE}} -o {{.CABAL_PROJECT_FILE}}'
+    sources:
+      - '{{.STACK_FILE}}'
+    generates:
+      - '{{.CABAL_PROJECT_FILE}}'
+      - '{{.CABAL_PROJECT_FILE}}.freeze'
+
+  symlink-cabal:
+    deps: [stack2cabal]
+    vars:
+      CABAL_PROJECT_FILE: ./autogen/cabal-lts-{{.LTS}}.project
+    cmds:
+      - ln -sf {{.CABAL_PROJECT_FILE}} ./cabal.project
+      - ln -sf {{.CABAL_PROJECT_FILE}}.freeze ./cabal.project.freeze
+    sources:
+      - '{{.CABAL_PROJECT_FILE}}'
+      - '{{.CABAL_PROJECT_FILE}}.freeze'
+    generates:
+      - ./cabal.project
+      - ./cabal.project.freeze
+
+  dry-run:
+    vars:
+      STACK_FILE: stack-lts-{{.LTS}}.yaml
+    deps: [hpack]
+    cmds:
+      - stack build --dry-run --stack-yaml {{.STACK_FILE}}
+
+  symlink-stack:
+    deps: [dry-run]
+    vars:
+      STACK_FILE: stack-lts-{{.LTS}}.yaml
+    cmds:
+      - ln -sf {{.STACK_FILE}} stack.yaml
+      - ln -sf {{.STACK_FILE}}.lock stack.yaml.lock
+    sources:
+      - '{{.STACK_FILE}}'
+      - '{{.STACK_FILE}}.lock'
+    generates:
+      - stack.yaml
+      - stack.yaml.lock
+
+  symlink:
+    deps: [symlink-cabal,symlink-stack]
+
+  autogen:
+    deps: [stack2cabal,hpack]
+
+  build:
+    deps: [autogen]
+    vars:
+      CABAL_PROJECT_FILE: ./autogen/cabal-lts-{{.LTS}}.project
+      BUILD_ARGS_PROJECT: --project-file {{.CABAL_PROJECT_FILE}}
+      BUILD_ARGS_ALL: '{{.BUILD_ARGS_PROJECT}} {{.BUILD_ARGS}}'
+    cmds:
+      - cabal build {{.TARGETS}} {{.BUILD_ARGS_ALL}}
+
+  run:
+    deps: [autogen]
+    vars:
+      CABAL_PROJECT_FILE: ./autogen/cabal-lts-{{.LTS}}.project
+      BUILD_ARGS_PROJECT: --project-file {{.CABAL_PROJECT_FILE}}
+      BUILD_ARGS_ALL: '{{.BUILD_ARGS_PROJECT}} {{.BUILD_ARGS}}'
+    cmds:
+      - cabal run {{.TARGETS}} {{.BUILD_ARGS_ALL}}
+
+  repl:
+    deps: [autogen]
+    vars:
+      CABAL_PROJECT_FILE: ./autogen/cabal-lts-{{.LTS}}.project
+      BUILD_ARGS_PROJECT: --project-file {{.CABAL_PROJECT_FILE}}
+      BUILD_ARGS_ALL: '{{.BUILD_ARGS_PROJECT}} {{.BUILD_ARGS}}'
+    cmds:
+      - cabal repl {{.TARGETS}} {{.BUILD_ARGS_ALL}}
+
+  test:
+    deps: [autogen]
+    vars:
+      CABAL_PROJECT_FILE: ./autogen/cabal-lts-{{.LTS}}.project
+      BUILD_ARGS_PROJECT: --project-file {{.CABAL_PROJECT_FILE}}
+      BUILD_ARGS_ALL: '{{.BUILD_ARGS_PROJECT}} {{.BUILD_ARGS}}'
+    cmds:
+      - cabal test {{.TARGETS}} {{.BUILD_ARGS_ALL}}
+
+  bench:
+    deps: [autogen]
+    vars:
+      CABAL_PROJECT_FILE: ./autogen/cabal-lts-{{.LTS}}.project
+      BUILD_ARGS_PROJECT: --project-file {{.CABAL_PROJECT_FILE}}
+      BUILD_ARGS_ALL: '{{.BUILD_ARGS_PROJECT}} {{.BUILD_ARGS}}'
+    cmds:
+      - cabal bench {{.TARGETS}} {{.BUILD_ARGS_ALL}}

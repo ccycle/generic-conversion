@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.7.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Data.Conversion.Generic
+      Data.Conversion.Generic.Custom
       Data.Conversion.Generic.TH
   other-modules:
       Paths_generic_conversion
@@ -45,7 +46,9 @@ library
   ghc-options: -Wall -Wmissing-methods -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , bytestring
     , template-haskell
+    , text
   default-language: Haskell2010
 
 test-suite test
@@ -72,6 +75,7 @@ test-suite test
   ghc-options: -Wall -Wmissing-methods -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -ddump-splices -ddump-to-file -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , bytestring
     , generic-conversion
     , tasty
     , tasty-hunit
