@@ -5,8 +5,7 @@
 
 module Test.TH.Declare where
 
-import Data.Conversion.Generic
-import Data.Conversion.Generic.Custom
+import Data.Generic.Conversion
 import Data.Text
 import GHC.Generics
 import GHC.Natural
@@ -28,18 +27,11 @@ decsConvertGeneric =
     [d|
         deriving anyclass instance ConvertCustom Test1 Test2 Test1 Test2
 
-        deriving via (ConvertCustomType Test2) instance Convert Test1 Test2
+        deriving anyclass instance Convert Test1 Test2
         |]
-
-expConvertFunc :: Q Exp
-expConvertFunc =
-    [|toInteger :: forall (a :: Type). Integral a => a -> Integer|]
 
 unit_decsConvert :: IO ()
 unit_decsConvert = runQ decsConvert >>= print
-
-unit_expConvertFunc :: IO ()
-unit_expConvertFunc = runQ expConvertFunc >>= print
 
 unit_decsConvertGeneric :: IO ()
 unit_decsConvertGeneric = runQ decsConvertGeneric >>= print

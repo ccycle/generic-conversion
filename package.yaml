@@ -24,6 +24,7 @@ dependencies:
 - template-haskell
 - text
 - bytestring
+- containers
 
 ghc-options:
 - -Wall
@@ -65,6 +66,7 @@ tests:
     - generic-conversion
     - text
     - template-haskell
+    - safe-exceptions
     - tasty
     - tasty-hunit
     - tasty-quickcheck

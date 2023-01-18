@@ -25,9 +25,10 @@ source-repository head
 
 library
   exposed-modules:
-      Data.Conversion.Generic
-      Data.Conversion.Generic.Custom
-      Data.Conversion.Generic.TH
+      Data.Generic.Conversion
+      Data.Generic.Conversion.Applicative
+      Data.Generic.Conversion.Applicative.TH
+      Data.Generic.Conversion.TH
   other-modules:
       Paths_generic_conversion
   hs-source-dirs:
@@ -47,6 +48,7 @@ library
   build-depends:
       base >=4.7 && <5
     , bytestring
+    , containers
     , template-haskell
     , text
   default-language: Haskell2010
@@ -55,6 +57,9 @@ test-suite test
   type: exitcode-stdio-1.0
   main-is: Tasty.hs
   other-modules:
+      Test.Applicative.Examples
+      Test.Applicative.TH.Declare
+      Test.Applicative.TH.Examples
       Test.Example
       Test.TH.Declare
       Test.TH.Example
@@ -76,7 +81,9 @@ test-suite test
   build-depends:
       base >=4.7 && <5
     , bytestring
+    , containers
     , generic-conversion
+    , safe-exceptions
     , tasty
     , tasty-hunit
     , tasty-quickcheck

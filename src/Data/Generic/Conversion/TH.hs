@@ -1,12 +1,13 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 
-module Data.Conversion.Generic.TH (deriveConvert) where
+module Data.Generic.Conversion.TH (deriveConvert) where
 
 import Control.Applicative (liftA2)
-import Data.Conversion.Generic
-import Data.Conversion.Generic.Custom
+import Data.Generic.Conversion
 import Language.Haskell.TH
 
 newtype ExpressionException = ExpressionException Exp deriving stock (Show)
@@ -37,11 +38,12 @@ declareInstanceConvertCustom context (ConvertFromDataType fromDataType) (Convert
 declareConvertAnyclass :: ConvertFromDataType -> ConvertToDataType -> [Dec]
 declareConvertAnyclass (ConvertFromDataType fromDataType) (ConvertToDataType toDataType) =
     [ StandaloneDerivD (Just AnyclassStrategy) [] (AppT (AppT (AppT (AppT (ConT ''ConvertCustom) fromDataType) toDataType) fromDataType) toDataType)
-    , StandaloneDerivD (Just (ViaStrategy (AppT (ConT ''ConvertCustomType) toDataType))) [] (AppT (AppT (ConT ''Convert) fromDataType) toDataType)
+    , StandaloneDerivD (Just AnyclassStrategy) [] (AppT (AppT (ConT ''Convert) fromDataType) toDataType)
     ]
 
 data ExtractFuncInfo = ExtractFuncInfo
     { func :: Exp
+    , tyVarBndrs :: [TyVarBndr Specificity]
     , context :: Cxt
     , fromType :: Type
     , toType :: Type
@@ -52,8 +54,8 @@ extractFuncInfo :: Q Exp -> Q ExtractFuncInfo
 extractFuncInfo astExpQ = do
     astExp <- astExpQ
     case astExp of
-        SigE func (AppT (AppT ArrowT fromType) toType) -> pure ExtractFuncInfo{context = [], ..}
-        SigE func (ForallT [] context (AppT (AppT ArrowT fromType) toType)) -> pure ExtractFuncInfo{..}
+        SigE func (AppT (AppT ArrowT fromType) toType) -> pure ExtractFuncInfo{context = [], tyVarBndrs = [], ..}
+        SigE func (ForallT tyVarBndrs context (AppT (AppT ArrowT fromType) toType)) -> pure ExtractFuncInfo{..}
         a -> error <$> displayExpressionExceptionQ (ExpressionException a)
 
 extractFuncInfoList :: [Q Exp] -> Q [ExtractFuncInfo]

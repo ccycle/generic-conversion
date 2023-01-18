@@ -1,13 +1,16 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Test.TH.Example where
 
 import Data.Coerce (coerce)
-import Data.Conversion.Generic
-import Data.Conversion.Generic.TH
+import Data.Generic.Conversion
+import Data.Generic.Conversion.TH
+import Data.Kind
 import Data.Text
 import GHC.Generics
 import GHC.Natural
@@ -20,10 +23,10 @@ data Test2 = Test2 {a2 :: NewInteger, b2 :: Text, c2 :: Bool, d2 :: NewInteger} 
 -- Derive `Convert` instance with TH
 deriveConvert ''Test1 ''Test2 [[|coerce . toInteger :: Integral a => a -> NewInteger|], [|pack :: String -> Text|]]
 
-unit_convertFromTest1ToTest2 :: IO ()
-unit_convertFromTest1ToTest2 = print (convert (Test1{a1 = 1, b1 = "a", c1 = True, d1 = 1}) :: Test2)
+unit_convertFromTest1ToTest2TH :: IO ()
+unit_convertFromTest1ToTest2TH = print (convert (Test1{a1 = 1, b1 = "a", c1 = True, d1 = 1}) :: Test2)
 
-deriveConvert ''Test2 ''Test1 [[|fromInteger . coerce :: Num a => NewInteger -> a|], [|unpack :: Text -> String|]]
+deriveConvert ''Test2 ''Test1 [[|fromInteger . coerce :: forall (a :: Type). Num a => NewInteger -> a|], [|unpack :: Text -> String|]]
 
-unit_convertFromTest2ToTest1 :: IO ()
-unit_convertFromTest2ToTest1 = print (convert (Test2{a2 = NewInteger 1, b2 = pack "a", c2 = True, d2 = NewInteger 1}) :: Test1)
+unit_convertFromTest2ToTest1TH :: IO ()
+unit_convertFromTest2ToTest1TH = print (convert (Test2{a2 = NewInteger 1, b2 = pack "a", c2 = True, d2 = NewInteger 1}) :: Test1)

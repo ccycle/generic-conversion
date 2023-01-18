@@ -1,25 +1,24 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Data.Conversion.Generic where
+module Data.Generic.Conversion where
 
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Short as BS
-import Data.Conversion.Generic.Custom
-import Data.Int
+import Data.Int (Int16, Int32, Int64, Int8)
 import Data.String (IsString (..))
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import Data.Word
+import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Generics
 import GHC.Natural (Natural)
 
 class Convert a b where
     convert :: a -> b
-    default convert :: (Generic a, Generic b, GConvert (Rep a) (Rep b)) => a -> b
-    convert = to . gconvert . from
+    default convert :: (ConvertCustom a b a b) => a -> b
+    convert = (convertCustom :: ConvertCustom a b a b => Proxy2 a b -> a -> b) Proxy2
 
 instance Convert a a where
     convert = id
@@ -45,10 +44,10 @@ instance (Convert a b) => GConvert (K1 i1 a) (K1 i2 b) where
 instance (GConvert f g) => GConvert (M1 i1 t1 f) (M1 i2 t2 g) where
     gconvert = M1 . gconvert . unM1
 
--- ConvertCustom
-newtype ConvertCustomType a = ConvertCustomType a
-instance (ConvertCustom a b a b) => Convert a (ConvertCustomType b) where
-    convert = ConvertCustomType . (convertCustom :: ConvertCustom a b a b => Proxy2 a b -> a -> b) Proxy2
+-- Generic
+newtype FromGeneric a b = FromGeneric b
+instance (Generic a, Generic b, GConvert (Rep a) (Rep b)) => Convert a (FromGeneric a b) where
+    convert = FromGeneric . to . gconvert . from
 
 -- Integral
 newtype IntegralType a = IntegralType a
@@ -128,3 +127,35 @@ deriving via (IsStringType B.ByteString) instance Convert String B.ByteString
 deriving via (IsStringType BL.ByteString) instance Convert String BL.ByteString
 deriving via (IsStringType BB.Builder) instance Convert String BB.Builder
 deriving via (IsStringType BS.ShortByteString) instance Convert String BS.ShortByteString
+
+----------------------------------------------------------------
+
+-- Custom convert
+data Proxy2 d1 d2 = Proxy2
+
+class ConvertCustom d1 d2 a b where
+    convertCustom :: Proxy2 d1 d2 -> a -> b
+    default convertCustom :: (Generic a, Generic b, GConvertCustom d1 d2 (Rep a) (Rep b)) => Proxy2 d1 d2 -> a -> b
+    convertCustom p = to . gconvertCustom p . from
+
+instance ConvertCustom d1 d2 a a where
+    convertCustom _ = id
+
+class GConvertCustom d1 d2 f g where
+    gconvertCustom :: Proxy2 d1 d2 -> f a -> g a
+
+instance GConvertCustom d1 d2 U1 U1 where
+    gconvertCustom _ = id
+
+instance (GConvertCustom d1 d2 f1 g1, GConvertCustom d1 d2 f2 g2) => GConvertCustom d1 d2 (f1 :*: f2) (g1 :*: g2) where
+    gconvertCustom p (f :*: g) = gconvertCustom p f :*: gconvertCustom p g
+
+instance (GConvertCustom d1 d2 f1 g1, GConvertCustom d1 d2 f2 g2) => GConvertCustom d1 d2 (f1 :+: f2) (g1 :+: g2) where
+    gconvertCustom p (L1 a) = L1 $ gconvertCustom p a
+    gconvertCustom p (R1 b) = R1 $ gconvertCustom p b
+
+instance (ConvertCustom d1 d2 a b) => GConvertCustom d1 d2 (K1 i1 a) (K1 i2 b) where
+    gconvertCustom p = K1 . convertCustom p . unK1
+
+instance (GConvertCustom d1 d2 f g) => GConvertCustom d1 d2 (M1 i1 t1 f) (M1 i2 t2 g) where
+    gconvertCustom p = M1 . gconvertCustom p . unM1
