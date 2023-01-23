@@ -1,9 +1,11 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 
 module Test.Applicative.Examples where
 
 import Control.Exception.Safe
+import Data.Coerce
+import Data.Generic.Conversion
 import Data.Generic.Conversion.Applicative
 import Data.Text
 import GHC.Generics
@@ -27,9 +29,11 @@ instance MonadThrow m => ConvertCustomM m Test1 Test2 Bool Bool where
 instance MonadThrow m => ConvertCustomM m Test1 Test2 Natural Integer where
     convertCustomM _ = checkIfPositive . fromIntegral
 
-deriving anyclass instance (MonadThrow m) => ConvertCustomM m Test1 Test2 Test1 Test2
-
-deriving anyclass instance (MonadThrow m) => ConvertM m Test1 Test2
+-- The following also work (requires DeriveAnyClass):
+-- > deriving anyclass instance (MonadThrow m) => ConvertCustomM m Test1 Test2 Test1 Test2
+-- > deriving anyclass instance (MonadThrow m) => ConvertM m Test1 Test2
+deriving via (FromGeneric Test1 Test2) instance (MonadThrow m, forall x y. (Coercible x y => Coercible (m x) (m y))) => ConvertCustomM m Test1 Test2 Test1 Test2
+deriving via (FromCustom Test1 Test2) instance (MonadThrow m, forall x y. (Coercible x y => Coercible (m x) (m y))) => ConvertM m Test1 Test2
 
 printSomeException :: SomeException -> IO ()
 printSomeException (SomeException e) = print e

@@ -7,7 +7,7 @@ module Data.Generic.Conversion.Applicative (
 where
 
 import Control.Applicative (liftA2)
-import Data.Generic.Conversion (Proxy2 (..))
+import Data.Generic.Conversion (FromCustom (..), FromGeneric (..), Proxy2 (..))
 import GHC.Generics
 
 class ConvertM m a b where
@@ -15,10 +15,16 @@ class ConvertM m a b where
     default convertM :: (ConvertCustomM m a b a b) => a -> m b
     convertM = (convertCustomM :: ConvertCustomM m a b a b => Proxy2 a b -> a -> m b) (Proxy2 :: Proxy2 a b)
 
+instance (ConvertCustomM m a b a b) => ConvertM m a (FromCustom a b) where
+    convertM = fmap FromCustom . (convertCustomM :: ConvertCustomM m a b a b => Proxy2 a b -> a -> m b) (Proxy2 :: Proxy2 a b)
+
 class Applicative m => ConvertCustomM m d1 d2 a b where
     convertCustomM :: Proxy2 d1 d2 -> a -> m b
     default convertCustomM :: (Generic a, Generic b, GConvertCustomM m d1 d2 (Rep a) (Rep b)) => Proxy2 d1 d2 -> a -> m b
     convertCustomM p = fmap to . gconvertCustomM p . from
+
+instance (Applicative m, Generic a, Generic b, GConvertCustomM m d1 d2 (Rep a) (Rep b)) => ConvertCustomM m d1 d2 a (FromGeneric a b) where
+    convertCustomM p = fmap (FromGeneric . to) . gconvertCustomM p . from
 
 class GConvertCustomM m d1 d2 f g where
     gconvertCustomM :: Proxy2 d1 d2 -> f a -> m (g a)

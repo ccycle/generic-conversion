@@ -1,8 +1,5 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Test.Example where
 
@@ -28,8 +25,11 @@ instance ConvertCustom Test2 Test1 Text String where
 instance (Num a) => ConvertCustom Test2 Test1 Integer a where
     convertCustom _ = fromInteger
 
-deriving anyclass instance ConvertCustom Test2 Test1 Test2 Test1
-deriving anyclass instance Convert Test2 Test1
+-- The following also work (requires DeriveAnyClass):
+-- deriving anyclass instance ConvertCustom Test2 Test1 Test2 Test1
+-- deriving anyclass instance Convert Test2 Test1
+deriving via (FromGeneric Test2 Test1) instance ConvertCustom Test2 Test1 Test2 Test1
+deriving via (FromCustom Test2 Test1) instance Convert Test2 Test1
 
 unit_convertFromTest2ToTest1 :: IO ()
 unit_convertFromTest2ToTest1 = print (convert Test2{a2 = 1, b2 = pack "test", c2 = True, d2 = 2} :: Test1)

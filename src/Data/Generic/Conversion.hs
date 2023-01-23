@@ -138,6 +138,13 @@ class ConvertCustom d1 d2 a b where
     default convertCustom :: (Generic a, Generic b, GConvertCustom d1 d2 (Rep a) (Rep b)) => Proxy2 d1 d2 -> a -> b
     convertCustom p = to . gconvertCustom p . from
 
+instance (Generic a, Generic b, GConvertCustom d1 d2 (Rep a) (Rep b)) => ConvertCustom d1 d2 a (FromGeneric a b) where
+    convertCustom p = (FromGeneric . to) . gconvertCustom p . from
+
+newtype FromCustom a b = FromCustom b
+instance (ConvertCustom a b a b) => Convert a (FromCustom a b) where
+    convert = FromCustom . (convertCustom :: ConvertCustom a b a b => Proxy2 a b -> a -> b) Proxy2
+
 instance ConvertCustom d1 d2 a a where
     convertCustom _ = id
 
