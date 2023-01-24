@@ -4,9 +4,10 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 
-module Data.Generic.Conversion.Applicative.TH (deriveConvertM) where
+module Data.Generic.Conversion.Applicative.TH (deriveConvertM, deriveAnyclassConvertM) where
 
 import Control.Applicative (liftA2)
+import Data.Coerce (Coercible)
 import Data.Containers.ListUtils (nubOrd)
 import Data.Generic.Conversion.Applicative
 import Language.Haskell.TH
@@ -14,8 +15,8 @@ import Language.Haskell.TH
 newtype ConvertContext = ConvertContext Cxt deriving newtype (Eq, Ord)
 newtype ConvertContextConcat = ConvertContextConcat Cxt deriving newtype (Show)
 newtype ConvertMonadVar = ConvertMonadVar Type
-newtype ConvertFromDataType = ConvertFromDataType Type
-newtype ConvertToDataType = ConvertToDataType Type
+newtype FromDataType = FromDataType {fromDataType :: Type}
+newtype ToDataType = ToDataType {toDataType :: Type}
 
 -- Exception
 newtype ExpressionException = ExpressionException Exp deriving stock (Show)
@@ -32,13 +33,13 @@ displayExpressionExceptionQ (ExpressionException astExp) = do
 declareInstanceConvertCustomM ::
     ConvertContext ->
     ConvertMonadVar ->
-    ConvertFromDataType ->
-    ConvertToDataType ->
+    FromDataType ->
+    ToDataType ->
     Type ->
     Type ->
     Exp ->
     Dec
-declareInstanceConvertCustomM (ConvertContext context) (ConvertMonadVar monad) (ConvertFromDataType fromDataType) (ConvertToDataType toDataType) fromType toType func =
+declareInstanceConvertCustomM (ConvertContext context) (ConvertMonadVar monad) (FromDataType{..}) (ToDataType{..}) fromType toType func =
     InstanceD
         Nothing
         context
@@ -62,11 +63,25 @@ renameTypes filterFunc = \case
     VarT x -> VarT (filterFunc x)
     x -> x
 
-declareConvertCustomM :: ConvertContextConcat -> ConvertMonadVar -> ConvertFromDataType -> ConvertToDataType -> [Dec]
-declareConvertCustomM (ConvertContextConcat context) (ConvertMonadVar monad) (ConvertFromDataType fromDataType) (ConvertToDataType toDataType) =
-    [ StandaloneDerivD (Just AnyclassStrategy) context (AppT (AppT (AppT (AppT (AppT (ConT ''ConvertCustomM) monad) fromDataType) toDataType) fromDataType) toDataType)
-    , StandaloneDerivD (Just AnyclassStrategy) context (AppT (AppT (AppT (ConT ''ConvertM) monad) fromDataType) toDataType)
-    ]
+data DerivingStrategyOption = DerivingViaOpt | DeriveAnyClassOpt
+
+deriveStrategyFromOpt :: Name -> DerivingStrategyOption -> FromDataType -> ToDataType -> Maybe DerivStrategy
+deriveStrategyFromOpt viaTypeName DerivingViaOpt (FromDataType{..}) (ToDataType{..}) = Just (ViaStrategy (AppT (AppT (ConT viaTypeName) fromDataType) toDataType))
+deriveStrategyFromOpt _ DeriveAnyClassOpt _ _ = Just AnyclassStrategy
+
+declareConvertCustomM :: DerivingStrategyOption -> ConvertContextConcat -> ConvertMonadVar -> FromDataType -> ToDataType -> Q [Dec]
+declareConvertCustomM opt (ConvertContextConcat context) (ConvertMonadVar monad) f@FromDataType{..} t@ToDataType{..} = do
+    cxtM <- quantifiedConstraints monad
+    let cxtConcat = (context <> cxtM)
+    pure
+        [ StandaloneDerivD (deriveStrategyFromOpt ''FromGeneric opt f t) (cxtConcat) (AppT (AppT (AppT (AppT (AppT (ConT ''ConvertCustomM) monad) fromDataType) toDataType) fromDataType) toDataType)
+        , StandaloneDerivD (deriveStrategyFromOpt ''FromCustom opt f t) cxtConcat (AppT (AppT (AppT (ConT ''ConvertM) monad) fromDataType) toDataType)
+        ]
+  where
+    quantifiedConstraints m = do
+        x <- newName "x"
+        y <- newName "y"
+        pure [ForallT [PlainTV x SpecifiedSpec, PlainTV y SpecifiedSpec] [AppT (AppT (ConT ''Coercible) (VarT x)) (VarT y)] (AppT (AppT (ConT ''Coercible) (AppT (m) (VarT x))) (AppT (m) (VarT y)))]
 
 data ExtractFuncInfo = ExtractFuncInfo
     { func :: Exp
@@ -106,20 +121,26 @@ extractFuncInfoList = traverse extractFuncInfo
 filterAndConcatQ :: Name -> [Q Exp] -> Q ConvertContextConcat
 filterAndConcatQ varName = fmap (filterAndConcat varName) . extractFuncInfoList
 
-deriveInstanceConvertCustomFromExtractedInfo :: ConvertFromDataType -> ConvertToDataType -> ExtractFuncInfo -> Dec
+deriveInstanceConvertCustomFromExtractedInfo :: FromDataType -> ToDataType -> ExtractFuncInfo -> Dec
 deriveInstanceConvertCustomFromExtractedInfo fromDataType toDataType ExtractFuncInfo{..} =
     declareInstanceConvertCustomM (ConvertContext context) (ConvertMonadVar monad) fromDataType toDataType fromType toType func
 
-deriveConvertM' :: ConvertFromDataType -> ConvertToDataType -> [Q Exp] -> Q [Dec]
-deriveConvertM' fromDataType toDataType expQs = do
+deriveConvertMForEachQExp :: FromDataType -> ToDataType -> [Q Exp] -> Q [Dec]
+deriveConvertMForEachQExp fromDataType toDataType expQs = do
     extractFuncInfoQs <- extractFuncInfoList expQs
     pure $ fmap (deriveInstanceConvertCustomFromExtractedInfo fromDataType toDataType) extractFuncInfoQs
 
-deriveConvertM :: Name -> Name -> [Q Exp] -> Q [Dec]
-deriveConvertM name1 name2 expQs = do
+deriveConvertMWithOption :: DerivingStrategyOption -> Name -> Name -> [Q Exp] -> Q [Dec]
+deriveConvertMWithOption opt name1 name2 expQs = do
     m <- newName "m"
     cxtConcat <- filterAndConcatQ m expQs
-    deriveConvertM' fromData toData expQs <<>> pure (declareConvertCustomM cxtConcat (ConvertMonadVar (VarT m)) fromData toData)
+    deriveConvertMForEachQExp fromData toData expQs <<>> declareConvertCustomM opt cxtConcat (ConvertMonadVar (VarT m)) fromData toData
   where
-    fromData = ConvertFromDataType (ConT name1)
-    toData = ConvertToDataType (ConT name2)
+    fromData = FromDataType (ConT name1)
+    toData = ToDataType (ConT name2)
+
+deriveConvertM :: Name -> Name -> [Q Exp] -> Q [Dec]
+deriveConvertM = deriveConvertMWithOption DerivingViaOpt
+
+deriveAnyclassConvertM :: Name -> Name -> [Q Exp] -> Q [Dec]
+deriveAnyclassConvertM = deriveConvertMWithOption DeriveAnyClassOpt

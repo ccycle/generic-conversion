@@ -7,6 +7,8 @@
 
 module Test.Applicative.TH.Declare where
 
+import Control.Exception.Safe (MonadThrow)
+import Data.Coerce (Coercible)
 import Data.Generic.Conversion.Applicative
 import Data.Text
 import GHC.Generics
@@ -24,14 +26,18 @@ decsConvertM =
             convertCustomM _ = pure . toInteger
         |]
 
-decsDeriveConvertCustomM =
+decsDeriveConvertMAnyclass =
     [d|
         deriving anyclass instance (Applicative m) => ConvertCustomM m Test1 Test2 Test1 Test2
+
+        deriving anyclass instance (Applicative m) => ConvertM m Test1 Test2
         |]
 
-decsDeriveConvertM =
+decsDeriveConvertMDerivingVia =
     [d|
-        deriving anyclass instance (Applicative m) => ConvertM m Test1 Test2
+        deriving via (FromGeneric Test1 Test2) instance (MonadThrow m, forall x y. (Coercible x y => Coercible (m x) (m y))) => ConvertCustomM m Test1 Test2 Test1 Test2
+
+        deriving via (FromCustom Test1 Test2) instance (MonadThrow m, forall x y. (Coercible x y => Coercible (m x) (m y))) => ConvertM m Test1 Test2
         |]
 
 expConvertMFunc :: Q Exp
@@ -51,8 +57,8 @@ unit_expConvertMFunc = runQ expConvertMFunc >>= print
 unit_expConvertMFuncForall :: IO ()
 unit_expConvertMFuncForall = runQ expConvertMFuncForall >>= print
 
-unit_decsDeriveConvertM :: IO ()
-unit_decsDeriveConvertM = runQ decsDeriveConvertM >>= print
+unit_decsDeriveConvertMDerivingVia :: IO ()
+unit_decsDeriveConvertMDerivingVia = runQ decsDeriveConvertMDerivingVia >>= print
 
-unit_decsDeriveConvertCustomM :: IO ()
-unit_decsDeriveConvertCustomM = runQ decsDeriveConvertCustomM >>= print
+unit_decsDeriveConvertMAnyclass :: IO ()
+unit_decsDeriveConvertMAnyclass = runQ decsDeriveConvertMAnyclass >>= print

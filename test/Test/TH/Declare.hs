@@ -22,8 +22,16 @@ decsConvert =
             convertCustom _ = toInteger
         |]
 
-decsConvertGeneric :: Q [Dec]
-decsConvertGeneric =
+decsConvertDerivingVia :: Q [Dec]
+decsConvertDerivingVia =
+    [d|
+        deriving via (FromGeneric Test1 Test2) instance ConvertCustom Test1 Test2 Test1 Test2
+
+        deriving via (FromCustom Test1 Test2) instance Convert Test1 Test2
+        |]
+
+decsConvertAnyclass :: Q [Dec]
+decsConvertAnyclass =
     [d|
         deriving anyclass instance ConvertCustom Test1 Test2 Test1 Test2
 
@@ -33,5 +41,8 @@ decsConvertGeneric =
 unit_decsConvert :: IO ()
 unit_decsConvert = runQ decsConvert >>= print
 
-unit_decsConvertGeneric :: IO ()
-unit_decsConvertGeneric = runQ decsConvertGeneric >>= print
+unit_decsConvertAnyclass :: IO ()
+unit_decsConvertAnyclass = runQ decsConvertAnyclass >>= print
+
+unit_decsConvertDerivingVia :: IO ()
+unit_decsConvertDerivingVia = runQ decsConvertDerivingVia >>= print

@@ -4,7 +4,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 
-module Data.Generic.Conversion.TH (deriveConvert) where
+module Data.Generic.Conversion.TH (deriveConvert, deriveAnyclassConvert) where
 
 import Control.Applicative (liftA2)
 import Data.Generic.Conversion
@@ -22,23 +22,34 @@ displayExpressionExceptionQ (ExpressionException astExp) = do
 
 declareInstanceConvertCustom ::
     Cxt ->
-    ConvertFromDataType ->
-    ConvertToDataType ->
+    FromDataType ->
+    ToDataType ->
     Type ->
     Type ->
     Exp ->
     Dec
-declareInstanceConvertCustom context (ConvertFromDataType fromDataType) (ConvertToDataType toDataType) fromType toType func =
+declareInstanceConvertCustom context (FromDataType fromDataType) (ToDataType toDataType) fromType toType func =
     InstanceD
         Nothing
         context
         (AppT (AppT (AppT (AppT (ConT ''ConvertCustom) fromDataType) toDataType) fromType) toType)
         [FunD 'convertCustom [Clause [WildP] (NormalB func) []]]
 
-declareConvertAnyclass :: ConvertFromDataType -> ConvertToDataType -> [Dec]
-declareConvertAnyclass (ConvertFromDataType fromDataType) (ConvertToDataType toDataType) =
-    [ StandaloneDerivD (Just AnyclassStrategy) [] (AppT (AppT (AppT (AppT (ConT ''ConvertCustom) fromDataType) toDataType) fromDataType) toDataType)
-    , StandaloneDerivD (Just AnyclassStrategy) [] (AppT (AppT (ConT ''Convert) fromDataType) toDataType)
+data DerivingStrategyOption = DerivingViaOpt | DeriveAnyClassOpt
+
+deriveStrategyFromOpt ::
+    Name ->
+    DerivingStrategyOption ->
+    FromDataType ->
+    ToDataType ->
+    Maybe DerivStrategy
+deriveStrategyFromOpt viaTypeName DerivingViaOpt (FromDataType{..}) (ToDataType{..}) = Just (ViaStrategy (AppT (AppT (ConT viaTypeName) fromDataType) toDataType))
+deriveStrategyFromOpt _ DeriveAnyClassOpt _ _ = Just AnyclassStrategy
+
+standaloneDeriveConvert :: DerivingStrategyOption -> FromDataType -> ToDataType -> [Dec]
+standaloneDeriveConvert opt f@FromDataType{..} t@ToDataType{..} =
+    [ StandaloneDerivD (deriveStrategyFromOpt ''FromGeneric opt f t) [] (AppT (AppT (AppT (AppT (ConT ''ConvertCustom) fromDataType) toDataType) fromDataType) toDataType)
+    , StandaloneDerivD (deriveStrategyFromOpt ''FromCustom opt f t) [] (AppT (AppT (ConT ''Convert) fromDataType) toDataType)
     ]
 
 data ExtractFuncInfo = ExtractFuncInfo
@@ -61,20 +72,26 @@ extractFuncInfo astExpQ = do
 extractFuncInfoList :: [Q Exp] -> Q [ExtractFuncInfo]
 extractFuncInfoList = traverse extractFuncInfo
 
-newtype ConvertFromDataType = ConvertFromDataType Type
-newtype ConvertToDataType = ConvertToDataType Type
+newtype FromDataType = FromDataType {fromDataType :: Type}
+newtype ToDataType = ToDataType {toDataType :: Type}
 
-deriveInstanceConvertCustomFromExtractedInfo :: ConvertFromDataType -> ConvertToDataType -> ExtractFuncInfo -> Dec
+deriveInstanceConvertCustomFromExtractedInfo :: FromDataType -> ToDataType -> ExtractFuncInfo -> Dec
 deriveInstanceConvertCustomFromExtractedInfo fromDataType toDataType ExtractFuncInfo{..} =
     declareInstanceConvertCustom context fromDataType toDataType fromType toType func
 
-deriveConvert' :: ConvertFromDataType -> ConvertToDataType -> [Q Exp] -> Q [Dec]
+deriveConvert' :: FromDataType -> ToDataType -> [Q Exp] -> Q [Dec]
 deriveConvert' fromDataType toDataType expQs = do
     extractFuncInfoQs <- extractFuncInfoList expQs
     pure $ fmap (deriveInstanceConvertCustomFromExtractedInfo fromDataType toDataType) extractFuncInfoQs
 
-deriveConvert :: Name -> Name -> [Q Exp] -> Q [Dec]
-deriveConvert name1 name2 expQs = deriveConvert' fromData toData expQs <<>> pure (declareConvertAnyclass fromData toData)
+deriveConvertWithOpt :: DerivingStrategyOption -> Name -> Name -> [Q Exp] -> Q [Dec]
+deriveConvertWithOpt opt name1 name2 expQs = deriveConvert' fromData toData expQs <<>> pure (standaloneDeriveConvert opt fromData toData)
   where
-    fromData = ConvertFromDataType (ConT name1)
-    toData = ConvertToDataType (ConT name2)
+    fromData = FromDataType (ConT name1)
+    toData = ToDataType (ConT name2)
+
+deriveConvert :: Name -> Name -> [Q Exp] -> Q [Dec]
+deriveConvert = deriveConvertWithOpt DerivingViaOpt
+
+deriveAnyclassConvert :: Name -> Name -> [Q Exp] -> Q [Dec]
+deriveAnyclassConvert = deriveConvertWithOpt DeriveAnyClassOpt
