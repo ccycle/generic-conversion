@@ -25,9 +25,9 @@ instance ConvertCustom Test2 Test1 Text String where
 instance (Num a) => ConvertCustom Test2 Test1 Integer a where
     convertCustom _ = fromInteger
 
--- The following also work (requires DeriveAnyClass):
--- deriving anyclass instance ConvertCustom Test2 Test1 Test2 Test1
--- deriving anyclass instance Convert Test2 Test1
+-- The following also work (requires `DeriveAnyClass` instead of `DerivingVia`):
+-- > deriving anyclass instance ConvertCustom Test2 Test1 Test2 Test1
+-- > deriving anyclass instance Convert Test2 Test1
 deriving via (FromGeneric Test2 Test1) instance ConvertCustom Test2 Test1 Test2 Test1
 deriving via (FromCustom Test2 Test1) instance Convert Test2 Test1
 

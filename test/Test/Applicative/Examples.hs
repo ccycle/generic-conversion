@@ -29,7 +29,7 @@ instance MonadThrow m => ConvertCustomM m Test1 Test2 Bool Bool where
 instance MonadThrow m => ConvertCustomM m Test1 Test2 Natural Integer where
     convertCustomM _ = checkIfPositive . fromIntegral
 
--- The following also work (requires DeriveAnyClass):
+-- The following also work (requires `DeriveAnyClass` instead of `DerivingVia`):
 -- > deriving anyclass instance (MonadThrow m) => ConvertCustomM m Test1 Test2 Test1 Test2
 -- > deriving anyclass instance (MonadThrow m) => ConvertM m Test1 Test2
 deriving via (FromGeneric Test1 Test2) instance (MonadThrow m, forall x y. (Coercible x y => Coercible (m x) (m y))) => ConvertCustomM m Test1 Test2 Test1 Test2

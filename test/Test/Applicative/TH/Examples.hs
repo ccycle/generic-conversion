@@ -25,7 +25,7 @@ instance Exception NegativeException
 checkIfPositive :: (Ord a, Num a, MonadThrow f) => a -> f a
 checkIfPositive a = if a >= 0 then pure a else throwM NegativeException
 
--- `deriveConvertMFromAnyclass` also work (requires DeriveAnyClass)
+-- `deriveConvertMFromAnyclass` also work (requires `DeriveAnyClass` instead of `DerivingVia`)
 deriveConvertM
     ''Test1
     ''Test2

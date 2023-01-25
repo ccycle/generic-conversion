@@ -20,7 +20,7 @@ newtype NewInteger = NewInteger Integer deriving stock (Show)
 data Test1 = Test1 {a1 :: Int, b1 :: String, c1 :: Bool, d1 :: Natural} deriving stock (Show, Generic)
 data Test2 = Test2 {a2 :: NewInteger, b2 :: Text, c2 :: Bool, d2 :: NewInteger} deriving stock (Show, Generic)
 
--- `deriveConvertFromAnyclass` also work (requires DeriveAnyClass)
+-- `deriveConvertFromAnyclass` also works (requires `DeriveAnyClass` instead of `DerivingVia`)
 deriveConvert
     ''Test1
     ''Test2
