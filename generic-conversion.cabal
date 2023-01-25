@@ -63,6 +63,9 @@ test-suite test
       Test.Example
       Test.TH.Declare
       Test.TH.Example
+      Test.Tips.Convert
+      Test.Tips.ModuleA
+      Test.Tips.ModuleB
       Paths_generic_conversion
   hs-source-dirs:
       test
