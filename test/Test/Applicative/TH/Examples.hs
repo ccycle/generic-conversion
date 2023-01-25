@@ -1,9 +1,5 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -25,7 +21,7 @@ instance Exception NegativeException
 checkIfPositive :: (Ord a, Num a, MonadThrow f) => a -> f a
 checkIfPositive a = if a >= 0 then pure a else throwM NegativeException
 
--- `deriveConvertMFromAnyclass` also work (requires `DeriveAnyClass` instead of `DerivingVia`)
+-- `deriveConvertMFromAnyclass` also works (requires `DeriveAnyClass` instead of `DerivingVia` and `QuantifiedConstraints`)
 deriveConvertM
     ''Test1
     ''Test2

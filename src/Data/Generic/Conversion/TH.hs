@@ -1,7 +1,4 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 
 module Data.Generic.Conversion.TH (

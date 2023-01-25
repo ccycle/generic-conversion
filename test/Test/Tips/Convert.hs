@@ -1,7 +1,6 @@
 -- Tips to avoid orphan instances for `Convert` class
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module Test.Tips.Convert where
 
