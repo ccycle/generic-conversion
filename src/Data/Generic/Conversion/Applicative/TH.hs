@@ -4,7 +4,10 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 
-module Data.Generic.Conversion.Applicative.TH (deriveConvertM, deriveAnyclassConvertM) where
+module Data.Generic.Conversion.Applicative.TH (
+    deriveConvertM,
+    deriveConvertMFromAnyclass,
+) where
 
 import Control.Applicative (liftA2)
 import Data.Coerce (Coercible)
@@ -142,5 +145,5 @@ deriveConvertMWithOption opt name1 name2 expQs = do
 deriveConvertM :: Name -> Name -> [Q Exp] -> Q [Dec]
 deriveConvertM = deriveConvertMWithOption DerivingViaOpt
 
-deriveAnyclassConvertM :: Name -> Name -> [Q Exp] -> Q [Dec]
-deriveAnyclassConvertM = deriveConvertMWithOption DeriveAnyClassOpt
+deriveConvertMFromAnyclass :: Name -> Name -> [Q Exp] -> Q [Dec]
+deriveConvertMFromAnyclass = deriveConvertMWithOption DeriveAnyClassOpt

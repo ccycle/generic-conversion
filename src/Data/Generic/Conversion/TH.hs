@@ -4,7 +4,10 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 
-module Data.Generic.Conversion.TH (deriveConvert, deriveAnyclassConvert) where
+module Data.Generic.Conversion.TH (
+    deriveConvert,
+    deriveConvertFromAnyclass,
+) where
 
 import Control.Applicative (liftA2)
 import Data.Generic.Conversion
@@ -93,5 +96,5 @@ deriveConvertWithOpt opt name1 name2 expQs = deriveConvert' fromData toData expQ
 deriveConvert :: Name -> Name -> [Q Exp] -> Q [Dec]
 deriveConvert = deriveConvertWithOpt DerivingViaOpt
 
-deriveAnyclassConvert :: Name -> Name -> [Q Exp] -> Q [Dec]
-deriveAnyclassConvert = deriveConvertWithOpt DeriveAnyClassOpt
+deriveConvertFromAnyclass :: Name -> Name -> [Q Exp] -> Q [Dec]
+deriveConvertFromAnyclass = deriveConvertWithOpt DeriveAnyClassOpt
