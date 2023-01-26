@@ -4,7 +4,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Test.TH.Example where
+module Test.Examples.Conversion.TH where
 
 import Data.Coerce (coerce)
 import Data.Generic.Conversion

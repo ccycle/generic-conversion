@@ -1,7 +1,7 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 
-module Test.Applicative.Examples where
+module Test.Examples.Conversion.Applicative where
 
 import Control.Exception.Safe
 import Data.Coerce

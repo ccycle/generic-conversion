@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Test.Applicative.TH.Examples where
+module Test.Examples.Conversion.Applicative.TH where
 
 import Control.Exception.Safe
 import Data.Generic.Conversion.Applicative

@@ -1,7 +1,7 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
-module Test.Example where
+module Test.Examples.Conversion where
 
 import Data.Generic.Conversion
 import Data.Text

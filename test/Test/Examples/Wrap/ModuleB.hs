@@ -1,4 +1,4 @@
-module Test.Tips.ModuleB where
+module Test.Examples.Wrap.ModuleB where
 
 import GHC.Generics
 

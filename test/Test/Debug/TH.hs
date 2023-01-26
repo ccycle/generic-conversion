@@ -1,9 +1,9 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 
-module Test.TH.Declare where
+module Test.Debug.TH where
 
 import Data.Generic.Conversion
 import Data.Text

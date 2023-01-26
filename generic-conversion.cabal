@@ -57,15 +57,15 @@ test-suite test
   type: exitcode-stdio-1.0
   main-is: Tasty.hs
   other-modules:
-      Test.Applicative.Examples
-      Test.Applicative.TH.Declare
-      Test.Applicative.TH.Examples
-      Test.Example
-      Test.TH.Declare
-      Test.TH.Example
-      Test.Tips.Convert
-      Test.Tips.ModuleA
-      Test.Tips.ModuleB
+      Test.Debug.TH
+      Test.Debug.TH.Applicative
+      Test.Examples.Conversion
+      Test.Examples.Conversion.Applicative
+      Test.Examples.Conversion.Applicative.TH
+      Test.Examples.Conversion.TH
+      Test.Examples.Wrap.Instance
+      Test.Examples.Wrap.ModuleA
+      Test.Examples.Wrap.ModuleB
       Paths_generic_conversion
   hs-source-dirs:
       test

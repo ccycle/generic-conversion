@@ -2,13 +2,13 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Test.Tips.Convert where
+module Test.Examples.Wrap.Instance where
 
 import Data.Coerce
 import Data.Generic.Conversion
 import GHC.Generics
-import qualified Test.Tips.ModuleA as A
-import qualified Test.Tips.ModuleB as B
+import qualified Test.Examples.Wrap.ModuleA as A
+import qualified Test.Examples.Wrap.ModuleB as B
 
 newtype Wrap a = Wrap a deriving newtype (Generic)
 unWrap :: Wrap a -> a

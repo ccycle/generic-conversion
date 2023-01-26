@@ -3,9 +3,9 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 
-module Test.Applicative.TH.Declare where
+module Test.Debug.TH.Applicative where
 
 import Control.Exception.Safe (MonadThrow)
 import Data.Coerce (Coercible)
@@ -26,6 +26,7 @@ decsConvertM =
             convertCustomM _ = pure . toInteger
         |]
 
+decsDeriveConvertMAnyclass :: Q [Dec]
 decsDeriveConvertMAnyclass =
     [d|
         deriving anyclass instance (Applicative m) => ConvertCustomM m Test1 Test2 Test1 Test2
@@ -33,6 +34,7 @@ decsDeriveConvertMAnyclass =
         deriving anyclass instance (Applicative m) => ConvertM m Test1 Test2
         |]
 
+decsDeriveConvertMDerivingVia :: Q [Dec]
 decsDeriveConvertMDerivingVia =
     [d|
         deriving via (FromGeneric Test1 Test2) instance (MonadThrow m, forall x y. (Coercible x y => Coercible (m x) (m y))) => ConvertCustomM m Test1 Test2 Test1 Test2
