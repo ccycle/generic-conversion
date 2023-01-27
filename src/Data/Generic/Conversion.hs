@@ -49,6 +49,15 @@ newtype FromGeneric a b = FromGeneric b
 instance (Generic a, Generic b, GConvert (Rep a) (Rep b)) => Convert a (FromGeneric a b) where
     convert = FromGeneric . to . gconvert . from
 
+-- Functor
+newtype FromFunctor f a b = FromFunctor (f b)
+instance (Functor f, Convert a b) => Convert (f a) (FromFunctor f a b) where
+    convert = FromFunctor . fmap convert
+
+deriving via (FromFunctor [] a b) instance (Convert a b) => Convert [a] [b]
+deriving via (FromFunctor Maybe a b) instance (Convert a b) => Convert (Maybe a) (Maybe b)
+deriving via (FromFunctor (Either e) a b) instance (Convert a b) => Convert (Either e a) (Either e b)
+
 -- Integral
 newtype IntegralType a = IntegralType a
 instance (Integral a, Num b) => Convert a (IntegralType b) where
