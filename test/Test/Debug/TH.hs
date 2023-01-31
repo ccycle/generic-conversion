@@ -1,11 +1,11 @@
 {-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 
 module Test.Debug.TH where
 
 import Data.Generic.Conversion
+import Data.Generic.Conversion.TH
+import Data.Proxy
 import Data.Text
 import GHC.Generics
 import GHC.Natural
@@ -22,6 +22,9 @@ decsConvert =
             convertCustom _ = toInteger
         |]
 
+unit_decsConvert :: IO ()
+unit_decsConvert = runQ decsConvert >>= print
+
 decsConvertDerivingVia :: Q [Dec]
 decsConvertDerivingVia =
     [d|
@@ -29,6 +32,9 @@ decsConvertDerivingVia =
 
         deriving via (FromCustom Test1 Test2) instance Convert Test1 Test2
         |]
+
+unit_decsConvertDerivingVia :: IO ()
+unit_decsConvertDerivingVia = runQ decsConvertDerivingVia >>= print
 
 decsConvertAnyclass :: Q [Dec]
 decsConvertAnyclass =
@@ -38,11 +44,11 @@ decsConvertAnyclass =
         deriving anyclass instance Convert Test1 Test2
         |]
 
-unit_decsConvert :: IO ()
-unit_decsConvert = runQ decsConvert >>= print
-
 unit_decsConvertAnyclass :: IO ()
 unit_decsConvertAnyclass = runQ decsConvertAnyclass >>= print
 
-unit_decsConvertDerivingVia :: IO ()
-unit_decsConvertDerivingVia = runQ decsConvertDerivingVia >>= print
+decsCheckConNamesSorted :: Q [Dec]
+decsCheckConNamesSorted = checkConNamesSorted (Proxy :: Proxy Test1)
+
+unit_decsCheckConNamesSorted :: IO ()
+unit_decsCheckConNamesSorted = runQ decsCheckConNamesSorted >>= print
