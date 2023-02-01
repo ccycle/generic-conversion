@@ -4,11 +4,12 @@ vars:
   LTS: '{{.LTS | default "20.3"}}'
   BUILD_ARGS: '{{.BUILD_ARGS | default "-O0"}}'
   TARGETS: '{{.TARGETS}}'
+  GLOBAL_FLAGS: '{{.GLOBAL_FLAGS}}'
 
 tasks:
   hpack:
     cmds:
-      - hpack -f
+      - "test -f package.yaml && hpack -f || echo \"package.yaml doesn't exists; aborting\""
 
   stack2cabal:
     desc: "Convert stack projects to cabal.project + cabal.project.freeze. Example: `task hs:stack2cabal LTS=20.3`"
@@ -41,7 +42,6 @@ tasks:
   dry-run:
     vars:
       STACK_FILE: stack-lts-{{.LTS}}.yaml
-    deps: [hpack]
     cmds:
       - stack build --dry-run --stack-yaml {{.STACK_FILE}}
 
@@ -65,47 +65,42 @@ tasks:
   autogen:
     deps: [stack2cabal,hpack]
 
-  build:
+  cabal:
     deps: [autogen]
     vars:
       CABAL_PROJECT_FILE: ./autogen/cabal-lts-{{.LTS}}.project
       BUILD_ARGS_PROJECT: --project-file {{.CABAL_PROJECT_FILE}}
       BUILD_ARGS_ALL: '{{.BUILD_ARGS_PROJECT}} {{.BUILD_ARGS}}'
+      GLOBAL_FLAGS: '{{.GLOBAL_FLAGS}}'
+      COMMAND: '{{.COMMAND}}'
     cmds:
-      - cabal build {{.TARGETS}} {{.BUILD_ARGS_ALL}}
+      - cabal {{.GLOBAL_FLAGS}} {{.COMMAND}} {{.TARGETS}} {{.BUILD_ARGS_ALL}}
 
-  run:
-    deps: [autogen]
-    vars:
-      CABAL_PROJECT_FILE: ./autogen/cabal-lts-{{.LTS}}.project
-      BUILD_ARGS_PROJECT: --project-file {{.CABAL_PROJECT_FILE}}
-      BUILD_ARGS_ALL: '{{.BUILD_ARGS_PROJECT}} {{.BUILD_ARGS}}'
+  build:
     cmds:
-      - cabal run {{.TARGETS}} {{.BUILD_ARGS_ALL}}
+      - task: cabal
+        vars:
+          COMMAND: build
+  run:
+    cmds:
+      - task: cabal
+        vars:
+          COMMAND: run
 
   repl:
-    deps: [autogen]
-    vars:
-      CABAL_PROJECT_FILE: ./autogen/cabal-lts-{{.LTS}}.project
-      BUILD_ARGS_PROJECT: --project-file {{.CABAL_PROJECT_FILE}}
-      BUILD_ARGS_ALL: '{{.BUILD_ARGS_PROJECT}} {{.BUILD_ARGS}}'
     cmds:
-      - cabal repl {{.TARGETS}} {{.BUILD_ARGS_ALL}}
+      - task: cabal
+        vars:
+          COMMAND: repl
 
   test:
-    deps: [autogen]
-    vars:
-      CABAL_PROJECT_FILE: ./autogen/cabal-lts-{{.LTS}}.project
-      BUILD_ARGS_PROJECT: --project-file {{.CABAL_PROJECT_FILE}}
-      BUILD_ARGS_ALL: '{{.BUILD_ARGS_PROJECT}} {{.BUILD_ARGS}}'
     cmds:
-      - cabal test {{.TARGETS}} {{.BUILD_ARGS_ALL}}
+      - task: cabal
+        vars:
+          COMMAND: test
 
   bench:
-    deps: [autogen]
-    vars:
-      CABAL_PROJECT_FILE: ./autogen/cabal-lts-{{.LTS}}.project
-      BUILD_ARGS_PROJECT: --project-file {{.CABAL_PROJECT_FILE}}
-      BUILD_ARGS_ALL: '{{.BUILD_ARGS_PROJECT}} {{.BUILD_ARGS}}'
     cmds:
-      - cabal bench {{.TARGETS}} {{.BUILD_ARGS_ALL}}
+      - task: cabal
+        vars:
+          COMMAND: bench

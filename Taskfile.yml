@@ -2,6 +2,7 @@ version: '3'
 
 includes:
   hs:
-    taskfile: ./Taskfile-haskell.yml
+    taskfile: Taskfile-haskell.yml
     vars:
-      LTS: '{{.LTS | default "20.3"}}'
+      LTS: "20.3"
+      GLOBAL_FLAGS: '{{.GLOBAL_FLAGS | default "--store-dir=~/.cabal/nix/store"}}'
