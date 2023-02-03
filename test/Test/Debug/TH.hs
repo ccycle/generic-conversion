@@ -4,8 +4,6 @@
 module Test.Debug.TH where
 
 import Data.Generic.Conversion
-import Data.Generic.Conversion.TH
-import Data.Proxy
 import Data.Text
 import GHC.Generics
 import GHC.Natural
@@ -46,9 +44,3 @@ decsConvertAnyclass =
 
 unit_decsConvertAnyclass :: IO ()
 unit_decsConvertAnyclass = runQ decsConvertAnyclass >>= print
-
-decsCheckConNamesSorted :: Q [Dec]
-decsCheckConNamesSorted = checkConNamesSorted (Proxy :: Proxy Test1)
-
-unit_decsCheckConNamesSorted :: IO ()
-unit_decsCheckConNamesSorted = runQ decsCheckConNamesSorted >>= print

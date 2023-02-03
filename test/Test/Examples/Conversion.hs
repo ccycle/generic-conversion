@@ -55,4 +55,10 @@ unit_convertFromABToBool = print A >> print (convert A :: Bool)
 deriving via (FromGeneric Bool AB) instance Convert Bool AB
 
 unit_convertFromBoolToAB :: IO ()
-unit_convertFromBoolToAB = print True >> print (convert True :: AB)
+unit_convertFromBoolToAB = print (convert True :: AB)
+
+data SumTest a = A1 | B1 a deriving stock (Show, Generic)
+deriving via (FromGeneric (Maybe a) (SumTest a)) instance Convert (Maybe a) (SumTest a)
+
+unit_convertFromMaybeToSumTest :: IO ()
+unit_convertFromMaybeToSumTest = print (convert (Just (1 :: Int)) :: SumTest Int)
