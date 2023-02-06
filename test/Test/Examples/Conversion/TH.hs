@@ -47,15 +47,10 @@ data SumTest2 = A2 | B2 | C2 deriving stock (Show, Generic)
 data SumTest3 = A3 | C3 | B3 deriving stock (Show, Generic)
 
 -- Compare the orders of constructor names in SumTest1 and SumTest3 at compile time
-checkConNamesOrder (Proxy :: Proxy SumTest1) (Proxy :: Proxy SumTest2)
-deriving via (FromGeneric SumTest1 SumTest2) instance Convert SumTest1 SumTest2
+deriveConvertWithCheckingConNamesOrder (Proxy :: Proxy SumTest1) (Proxy :: Proxy SumTest2)
 
 unit_convertFromSumTest1ToSumTest2 :: IO ()
 unit_convertFromSumTest1ToSumTest2 = print (convert B1 :: SumTest2)
 
 -- Throw compile-time error since the orders of constructor names in SumTest1 and SumTest3 does not match:
--- > checkConNamesOrder (Proxy :: Proxy SumTest1) (Proxy :: Proxy SumTest3)
-deriving via (FromGeneric SumTest1 SumTest3) instance Convert SumTest1 SumTest3
-
-unit_convertFromSumTest1ToSumTest3 :: IO ()
-unit_convertFromSumTest1ToSumTest3 = print (convert B1 :: SumTest3)
+-- > deriveConvertWithCheckingConNamesOrder (Proxy :: Proxy SumTest1) (Proxy :: Proxy SumTest3)

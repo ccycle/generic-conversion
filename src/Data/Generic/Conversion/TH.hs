@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
@@ -5,7 +6,7 @@
 module Data.Generic.Conversion.TH (
     deriveConvert,
     deriveConvertFromAnyclass,
-    checkConNamesOrder,
+    deriveConvertWithCheckingConNamesOrder,
 ) where
 
 import Control.Applicative (liftA2)
@@ -16,6 +17,7 @@ import Data.List (intercalate)
 import Data.Proxy
 import GHC.Generics
 import GHC.Stack
+import GHC.TypeLits
 import Language.Haskell.TH
 
 newtype ExpressionException = ExpressionException Exp deriving stock (Show)
@@ -138,16 +140,16 @@ eqList :: Eq a => [a] -> [a] -> Bool
 eqList l1 l2 = go l1 l2 True
   where
     go (x : xs) (y : ys) b = go xs ys (b && x == y)
-    go [] [] _ = True
+    go [] [] True = True
     go _ _ _ = False
 
 eqOrders :: (Ord a1, Ord a2) => [a1] -> [a2] -> Bool
 eqOrders l1 l2 = eqList (ordersBool l1) (ordersBool l2)
 
-checkConNamesOrder :: forall a b. (HasCallStack, GDatatype (Rep a), GConNames (Rep a), GDatatype (Rep b), GConNames (Rep b)) => Proxy a -> Proxy b -> Q [Dec]
+checkConNamesOrder :: forall a b. (HasCallStack, GDatatype (Rep a), GConNames (Rep a), GDatatype (Rep b), GConNames (Rep b)) => Proxy a -> Proxy b -> IO ()
 checkConNamesOrder proxy1 proxy2 =
     if eqOrders (conNamesProxy proxy1) (conNamesProxy proxy2)
-        then runIO (putStrLn ("[TH] Check orders for the constructor names in " ++ dName1 ++ " and " ++ dName2 ++ "; OK")) >> pure []
+        then putStrLn ("[TH] Check orders for the constructor names in " ++ dName1 ++ " and " ++ dName2 ++ "; OK")
         else withFrozenCallStack error msg
   where
     dName1 = datatypeNameProxy (Proxy :: Proxy a)
@@ -172,3 +174,18 @@ checkConNamesOrder proxy1 proxy2 =
             , "\n"
             ]
     indent = intercalate "\n" . map ('\t' :)
+
+deriveConvertWithCheckingConNamesOrder ::
+    ( GDatatype (Rep a1)
+    , GDatatype (Rep a2)
+    , GConNames (Rep a1)
+    , GConNames (Rep a2)
+    ) =>
+    Proxy a1 ->
+    Proxy a2 ->
+    Q [Dec]
+deriveConvertWithCheckingConNamesOrder proxyA proxyB = do
+    let aType = ConT $ mkName $ datatypeNameProxy proxyA
+        bType = ConT $ mkName $ datatypeNameProxy proxyB
+    runIO $ checkConNamesOrder proxyA proxyB
+    pure [StandaloneDerivD (deriveStrategyFromOpt ''FromGeneric DerivingViaOpt (FromDataType aType) (ToDataType bType)) [] (AppT (AppT (ConT ''Convert) aType) bType)]
