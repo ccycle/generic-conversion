@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 
@@ -7,6 +8,7 @@ import Data.Generic.Conversion
 import Data.Text
 import GHC.Generics
 import GHC.Natural
+import GHC.TypeLits
 import Language.Haskell.TH
 
 data Test1 = Test1 {a1 :: Int, b1 :: String, c1 :: Bool, d1 :: Natural} deriving stock (Show, Generic)
@@ -44,3 +46,18 @@ decsConvertAnyclass =
 
 unit_decsConvertAnyclass :: IO ()
 unit_decsConvertAnyclass = runQ decsConvertAnyclass >>= print
+
+data AB = A | B deriving (Generic)
+
+type ConNamesOrderErrorMessage a b =
+    'Text "The orders of constructor names do not match: " ':<>: 'ShowType a ':<>: 'Text ", " ':<>: 'ShowType b
+
+decsConvertTypeError :: Q [Dec]
+decsConvertTypeError =
+    [d|
+        instance Convert Bool AB where
+            convert = error "unreachable" :: (TypeError (ConNamesOrderErrorMessage Bool AB)) => Bool -> AB
+        |]
+
+unit_decsConvertTypeError :: IO ()
+unit_decsConvertTypeError = runQ decsConvertTypeError >>= print

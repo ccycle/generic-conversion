@@ -7,16 +7,16 @@ module Data.Generic.Conversion.TH (
     deriveConvert,
     deriveConvertFromAnyclass,
     deriveConvertWithCheckingConNamesOrder,
+    GDatatype (..),
+    GConNames (..),
 ) where
 
 import Control.Applicative (liftA2)
 import Data.Foldable (foldl')
 import Data.Generic.Conversion
 import qualified Data.Kind
-import Data.List (intercalate)
 import Data.Proxy
 import GHC.Generics
-import GHC.Stack
 import GHC.TypeLits
 import Language.Haskell.TH
 
@@ -146,34 +146,11 @@ eqList l1 l2 = go l1 l2 True
 eqOrders :: (Ord a1, Ord a2) => [a1] -> [a2] -> Bool
 eqOrders l1 l2 = eqList (ordersBool l1) (ordersBool l2)
 
-checkConNamesOrder :: forall a b. (HasCallStack, GDatatype (Rep a), GConNames (Rep a), GDatatype (Rep b), GConNames (Rep b)) => Proxy a -> Proxy b -> IO ()
-checkConNamesOrder proxy1 proxy2 =
-    if eqOrders (conNamesProxy proxy1) (conNamesProxy proxy2)
-        then putStrLn ("[TH] Check orders for the constructor names in " ++ dName1 ++ " and " ++ dName2 ++ "; OK")
-        else withFrozenCallStack error msg
-  where
-    dName1 = datatypeNameProxy (Proxy :: Proxy a)
-    dName2 = datatypeNameProxy (Proxy :: Proxy b)
-    msg =
-        unwords
-            [ "[TH]"
-            , "The orders of constructor names in "
-            , dName1
-            , "and"
-            , dName2
-            , "do not match;"
-            , "\n"
-            , "\n"
-            , dName1 ++ ":"
-            , "\n"
-            , indent (conNamesProxy proxy1)
-            , "\n"
-            , dName2 ++ ":"
-            , "\n"
-            , indent (conNamesProxy proxy2)
-            , "\n"
-            ]
-    indent = intercalate "\n" . map ('\t' :)
+checkConNamesOrder :: forall a b. (GConNames (Rep a), GConNames (Rep b)) => Proxy a -> Proxy b -> Bool
+checkConNamesOrder proxy1 proxy2 = eqOrders (conNamesProxy proxy1) (conNamesProxy proxy2)
+
+type ConNamesOrderErrorMessage a b =
+    'Text "The orders of constructor names do not match: " ':<>: 'ShowType a ':<>: 'Text ", " ':<>: 'ShowType b
 
 deriveConvertWithCheckingConNamesOrder ::
     ( GDatatype (Rep a1)
@@ -187,5 +164,6 @@ deriveConvertWithCheckingConNamesOrder ::
 deriveConvertWithCheckingConNamesOrder proxyA proxyB = do
     let aType = ConT $ mkName $ datatypeNameProxy proxyA
         bType = ConT $ mkName $ datatypeNameProxy proxyB
-    runIO $ checkConNamesOrder proxyA proxyB
-    pure [StandaloneDerivD (deriveStrategyFromOpt ''FromGeneric DerivingViaOpt (FromDataType aType) (ToDataType bType)) [] (AppT (AppT (ConT ''Convert) aType) bType)]
+    if checkConNamesOrder proxyA proxyB
+        then pure [StandaloneDerivD (deriveStrategyFromOpt ''FromGeneric DerivingViaOpt (FromDataType aType) (ToDataType bType)) [] (AppT (AppT (ConT ''Convert) aType) bType)]
+        else pure [InstanceD Nothing [] (AppT (AppT (ConT ''Convert) aType) bType) [ValD (VarP 'convert) (NormalB (SigE (AppE (VarE 'error) (LitE (StringL "unreachable"))) (ForallT [] [AppT (ConT ''TypeError) (AppT (AppT (ConT ''ConNamesOrderErrorMessage) aType) bType)] (AppT (AppT ArrowT aType) bType)))) []]]
