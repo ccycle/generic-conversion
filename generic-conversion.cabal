@@ -28,6 +28,7 @@ library
       Data.Generic.Conversion
       Data.Generic.Conversion.Applicative
       Data.Generic.Conversion.Applicative.TH
+      Data.Generic.Conversion.Internal
       Data.Generic.Conversion.TH
   other-modules:
       Paths_generic_conversion

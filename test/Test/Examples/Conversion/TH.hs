@@ -41,16 +41,12 @@ deriveConvert
 unit_convertFromTest2ToTest1TH :: IO ()
 unit_convertFromTest2ToTest1TH = print (convert (Test2{a2 = NewInteger 1, b2 = pack "a", c2 = True, d2 = NewInteger 1}) :: Test1)
 
--- Check the orders of constructor names with using `checkConNamesOrder` for safe conversion between data constructors
 data SumTest1 = A1 | B1 | C1 deriving stock (Show, Generic)
 data SumTest2 = A2 | B2 | C2 deriving stock (Show, Generic)
 data SumTest3 = A3 | C3 | B3 deriving stock (Show, Generic)
 
 -- Compare the orders of constructor names in SumTest1 and SumTest3 at compile time
-deriveConvertWithCheckingConNamesOrder (Proxy :: Proxy SumTest1) (Proxy :: Proxy SumTest2)
-
-unit_convertFromSumTest1ToSumTest2 :: IO ()
-unit_convertFromSumTest1ToSumTest2 = print (convert B1 :: SumTest2)
+testConNamesOrderTH (Proxy :: Proxy SumTest1) (Proxy :: Proxy SumTest2)
 
 -- Throw compile-time error since the orders of constructor names in SumTest1 and SumTest3 does not match:
--- > deriveConvertWithCheckingConNamesOrder (Proxy :: Proxy SumTest1) (Proxy :: Proxy SumTest3)
+-- > testConNamesOrderTH (Proxy :: Proxy SumTest1) (Proxy :: Proxy SumTest3)

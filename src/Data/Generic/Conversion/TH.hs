@@ -1,23 +1,19 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 
 module Data.Generic.Conversion.TH (
     deriveConvert,
     deriveConvertFromAnyclass,
-    deriveConvertWithCheckingConNamesOrder,
-    GDatatype (..),
-    GConNames (..),
+    testConNamesOrderTH,
 ) where
 
 import Control.Applicative (liftA2)
-import Data.Foldable (foldl')
 import Data.Generic.Conversion
-import qualified Data.Kind
+import Data.Generic.Conversion.Internal
+import Data.List (intercalate)
 import Data.Proxy
 import GHC.Generics
-import GHC.TypeLits
+import GHC.Stack
 import Language.Haskell.TH
 
 newtype ExpressionException = ExpressionException Exp deriving stock (Show)
@@ -106,64 +102,32 @@ deriveConvert = deriveConvertWithOpt DerivingViaOpt
 deriveConvertFromAnyclass :: Name -> Name -> [Q Exp] -> Q [Dec]
 deriveConvertFromAnyclass = deriveConvertWithOpt DeriveAnyClassOpt
 
-class GConNames (f :: Data.Kind.Type -> Data.Kind.Type) where
-    gconNames :: Proxy f -> [String]
-instance (GConNames f) => GConNames (M1 D t f) where
-    gconNames _ = gconNames (Proxy :: Proxy f)
-instance (GConNames f, GConNames g) => GConNames (f :+: g) where
-    gconNames _ = gconNames (Proxy :: Proxy f) ++ gconNames (Proxy :: Proxy g)
-instance (Constructor c) => GConNames (C1 c f) where
-    gconNames _ = [conName (undefined :: C1 c f g)]
-
-conNamesProxy :: forall t. (GConNames (Rep t)) => Proxy t -> [String]
-conNamesProxy _ = gconNames (Proxy :: Proxy (Rep t))
-
-datatypeNameProxy ::
-    forall a.
-    (GDatatype (Rep a)) =>
-    Proxy a ->
-    String
-datatypeNameProxy _ = gdatatypeName (Proxy :: Proxy (Rep a))
-
-class GDatatype (f :: Data.Kind.Type -> Data.Kind.Type) where
-    gdatatypeName :: Proxy f -> String
-instance (Datatype t) => GDatatype (M1 d t f) where
-    gdatatypeName _ = datatypeName (undefined :: M1 d t f a)
-
-ordersBool :: Ord a => [a] -> [Bool]
-ordersBool [] = []
-ordersBool (x : xs) = fst $ foldl' step ([], x) xs
+testConNamesOrderTH :: forall a b. (HasCallStack, GDatatype (Rep a), GConNames (Rep a), GDatatype (Rep b), GConNames (Rep b)) => Proxy a -> Proxy b -> Q [Dec]
+testConNamesOrderTH proxy1 proxy2 =
+    if testConNamesOrder proxy1 proxy2
+        then runIO (putStrLn msgOK) >> pure []
+        else withFrozenCallStack error msg
   where
-    step (b, val1) val2 = (b ++ [val1 <= val2], val2)
-
-eqList :: Eq a => [a] -> [a] -> Bool
-eqList l1 l2 = go l1 l2 True
-  where
-    go (x : xs) (y : ys) b = go xs ys (b && x == y)
-    go [] [] True = True
-    go _ _ _ = False
-
-eqOrders :: (Ord a1, Ord a2) => [a1] -> [a2] -> Bool
-eqOrders l1 l2 = eqList (ordersBool l1) (ordersBool l2)
-
-checkConNamesOrder :: forall a b. (GConNames (Rep a), GConNames (Rep b)) => Proxy a -> Proxy b -> Bool
-checkConNamesOrder proxy1 proxy2 = eqOrders (conNamesProxy proxy1) (conNamesProxy proxy2)
-
-type ConNamesOrderErrorMessage a b =
-    'Text "The orders of constructor names do not match: " ':<>: 'ShowType a ':<>: 'Text ", " ':<>: 'ShowType b
-
-deriveConvertWithCheckingConNamesOrder ::
-    ( GDatatype (Rep a1)
-    , GDatatype (Rep a2)
-    , GConNames (Rep a1)
-    , GConNames (Rep a2)
-    ) =>
-    Proxy a1 ->
-    Proxy a2 ->
-    Q [Dec]
-deriveConvertWithCheckingConNamesOrder proxyA proxyB = do
-    let aType = ConT $ mkName $ datatypeNameProxy proxyA
-        bType = ConT $ mkName $ datatypeNameProxy proxyB
-    if checkConNamesOrder proxyA proxyB
-        then pure [StandaloneDerivD (deriveStrategyFromOpt ''FromGeneric DerivingViaOpt (FromDataType aType) (ToDataType bType)) [] (AppT (AppT (ConT ''Convert) aType) bType)]
-        else pure [InstanceD Nothing [] (AppT (AppT (ConT ''Convert) aType) bType) [ValD (VarP 'convert) (NormalB (SigE (AppE (VarE 'error) (LitE (StringL "unreachable"))) (ForallT [] [AppT (ConT ''TypeError) (AppT (AppT (ConT ''ConNamesOrderErrorMessage) aType) bType)] (AppT (AppT ArrowT aType) bType)))) []]]
+    dName1 = datatypeNameProxy (Proxy :: Proxy a)
+    dName2 = datatypeNameProxy (Proxy :: Proxy b)
+    msgOK = "[TH] Check orders for the constructor names in " ++ dName1 ++ " and " ++ dName2 ++ "; OK"
+    msg =
+        unwords
+            [ "[TH]"
+            , "The orders of constructor names in "
+            , dName1
+            , "and"
+            , dName2
+            , "do not match;"
+            , "\n"
+            , "\n"
+            , dName1 ++ ":"
+            , "\n"
+            , indent (conNamesProxy proxy1)
+            , "\n"
+            , dName2 ++ ":"
+            , "\n"
+            , indent (conNamesProxy proxy2)
+            , "\n"
+            ]
+    indent = intercalate "\n" . map ('\t' :)
