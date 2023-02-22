@@ -4,13 +4,14 @@
 module Data.Generic.Conversion.TH (
     deriveConvert,
     deriveConvertFromAnyclass,
-    testConNamesOrderTH,
+    compareConNamesOrderTH,
+    isConNamesAscendingTH,
+    isConNamesDescendingTH,
 ) where
 
 import Control.Applicative (liftA2)
 import Data.Generic.Conversion
 import Data.Generic.Conversion.Internal
-import Data.List (intercalate)
 import Data.Proxy
 import GHC.Generics
 import GHC.Stack
@@ -102,32 +103,71 @@ deriveConvert = deriveConvertWithOpt DerivingViaOpt
 deriveConvertFromAnyclass :: Name -> Name -> [Q Exp] -> Q [Dec]
 deriveConvertFromAnyclass = deriveConvertWithOpt DeriveAnyClassOpt
 
-testConNamesOrderTH :: forall a b. (HasCallStack, GDatatype (Rep a), GConNames (Rep a), GDatatype (Rep b), GConNames (Rep b)) => Proxy a -> Proxy b -> Q [Dec]
-testConNamesOrderTH proxy1 proxy2 =
-    if testConNamesOrder proxy1 proxy2
+compareConNamesOrderTH :: forall a b. (HasCallStack, GDatatype (Rep a), GConNames (Rep a), GDatatype (Rep b), GConNames (Rep b)) => Proxy a -> Proxy b -> Q [Dec]
+compareConNamesOrderTH proxy1 proxy2 =
+    if compareConNamesOrder proxy1 proxy2
         then runIO (putStrLn msgOK) >> pure []
         else withFrozenCallStack error msg
   where
     dName1 = datatypeNameProxy (Proxy :: Proxy a)
     dName2 = datatypeNameProxy (Proxy :: Proxy b)
-    msgOK = "[TH] Check orders for the constructor names in " ++ dName1 ++ " and " ++ dName2 ++ "; OK"
+    msgOK = "[TH] Check orders for the data constructor names in " ++ dName1 ++ " and " ++ dName2 ++ "; OK"
     msg =
         unwords
             [ "[TH]"
-            , "The orders of constructor names in "
+            , "The orders of data constructor names in "
             , dName1
             , "and"
             , dName2
-            , "do not match;"
-            , "\n"
-            , "\n"
-            , dName1 ++ ":"
-            , "\n"
-            , indent (conNamesProxy proxy1)
-            , "\n"
-            , dName2 ++ ":"
-            , "\n"
-            , indent (conNamesProxy proxy2)
-            , "\n"
+            , "do not match."
             ]
-    indent = intercalate "\n" . map ('\t' :)
+
+data AscendingOrDescending = Ascending | Descending
+instance Show AscendingOrDescending where
+    show Ascending = "ascending"
+    show Descending = "descending"
+
+msgAscOrDesc :: Show a => a -> String -> String
+msgAscOrDesc ascOrDesc dName1 =
+    unwords
+        [ "[TH]"
+        , "The data constructor names in "
+        , dName1
+        , "are not sorted in"
+        , show ascOrDesc
+        , "order."
+        ]
+
+msgOKAscOrDesc :: Show a => a -> String -> String
+msgOKAscOrDesc ascOrDesc dName1 =
+    unwords
+        [ "[TH] Check if the data constructor names in"
+        , dName1
+        , "are sorted in"
+        , show ascOrDesc
+        , "order; OK"
+        ]
+
+funcAscOrDesc :: GConNames (Rep a) => AscendingOrDescending -> Proxy a -> Bool
+funcAscOrDesc Ascending = isConNamesAscendingOrder
+funcAscOrDesc Descending = isConNamesDescendingOrder
+
+isConNamesAscendingTH :: forall a. (HasCallStack, GDatatype (Rep a), GConNames (Rep a)) => Proxy a -> Q [Dec]
+isConNamesAscendingTH proxy1 =
+    if funcAscOrDesc Ascending proxy1
+        then runIO (putStrLn msgOK) >> pure []
+        else withFrozenCallStack error msg
+  where
+    dName1 = datatypeNameProxy (Proxy :: Proxy a)
+    msgOK = msgOKAscOrDesc Ascending dName1
+    msg = msgAscOrDesc Ascending dName1
+
+isConNamesDescendingTH :: forall a. (HasCallStack, GDatatype (Rep a), GConNames (Rep a)) => Proxy a -> Q [Dec]
+isConNamesDescendingTH proxy1 =
+    if funcAscOrDesc Descending proxy1
+        then runIO (putStrLn msgOK) >> pure []
+        else withFrozenCallStack error msg
+  where
+    dName1 = datatypeNameProxy (Proxy :: Proxy a)
+    msgOK = msgOKAscOrDesc Ascending dName1
+    msg = msgAscOrDesc Ascending dName1

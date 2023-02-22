@@ -7,7 +7,9 @@ module Data.Generic.Conversion.Internal (
     GDatatype (..),
     conNamesProxy,
     datatypeNameProxy,
-    testConNamesOrder,
+    compareConNamesOrder,
+    isConNamesAscendingOrder,
+    isConNamesDescendingOrder,
 ) where
 
 import Data.Foldable (foldl')
@@ -55,5 +57,23 @@ eqList l1 l2 = go l1 l2 True
 eqOrders :: (Ord a1, Ord a2) => [a1] -> [a2] -> Bool
 eqOrders l1 l2 = eqList (ordersBool l1) (ordersBool l2)
 
-testConNamesOrder :: forall a b. (GConNames (Rep a), GConNames (Rep b)) => Proxy a -> Proxy b -> Bool
-testConNamesOrder proxy1 proxy2 = eqOrders (conNamesProxy proxy1) (conNamesProxy proxy2)
+compareConNamesOrder :: forall a b. (GConNames (Rep a), GConNames (Rep b)) => Proxy a -> Proxy b -> Bool
+compareConNamesOrder proxy1 proxy2 = eqOrders (conNamesProxy proxy1) (conNamesProxy proxy2)
+
+isAscendingOrder :: Ord a => [a] -> Bool
+isAscendingOrder [] = True
+isAscendingOrder (x : xs) = fst $ foldl' step (True, x) xs
+  where
+    step (b, val1) val2 = (b && (val1 <= val2), val2)
+
+isConNamesAscendingOrder :: forall a. (GConNames (Rep a)) => Proxy a -> Bool
+isConNamesAscendingOrder = isAscendingOrder . conNamesProxy
+
+isDescendingOrder :: Ord a => [a] -> Bool
+isDescendingOrder [] = True
+isDescendingOrder (x : xs) = fst $ foldl' step (True, x) xs
+  where
+    step (b, val1) val2 = (b && (val1 >= val2), val2)
+
+isConNamesDescendingOrder :: forall a. (GConNames (Rep a)) => Proxy a -> Bool
+isConNamesDescendingOrder = isDescendingOrder . conNamesProxy

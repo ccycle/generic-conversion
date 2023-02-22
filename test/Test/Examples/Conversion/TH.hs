@@ -45,8 +45,14 @@ data SumTest1 = A1 | B1 | C1 deriving stock (Show, Generic)
 data SumTest2 = A2 | B2 | C2 deriving stock (Show, Generic)
 data SumTest3 = A3 | C3 | B3 deriving stock (Show, Generic)
 
--- Compare the orders of constructor names in SumTest1 and SumTest3 at compile time
-testConNamesOrderTH (Proxy :: Proxy SumTest1) (Proxy :: Proxy SumTest2)
+-- Check if the data constructor names in SumTest1 are sorted in ascending order at compile time
+isConNamesAscendingTH (Proxy :: Proxy SumTest1)
 
--- Throw compile-time error since the orders of constructor names in SumTest1 and SumTest3 does not match:
--- > testConNamesOrderTH (Proxy :: Proxy SumTest1) (Proxy :: Proxy SumTest3)
+-- Throw compile-time error since the data constructor names in SumTest1 are not sorted in descending order
+-- isConNamesDescendingTH (Proxy :: Proxy SumTest1)
+
+-- Compare the orders of constructor names in SumTest1 and SumTest3 at compile time
+compareConNamesOrderTH (Proxy :: Proxy SumTest1) (Proxy :: Proxy SumTest2)
+
+-- Throw compile-time error since the orders of data constructor names in SumTest1 and SumTest3 does not match:
+-- > compareConNamesOrderTH (Proxy :: Proxy SumTest1) (Proxy :: Proxy SumTest3)
