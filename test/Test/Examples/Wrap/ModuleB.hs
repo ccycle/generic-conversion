@@ -1,5 +1,6 @@
 module Test.Examples.Wrap.ModuleB where
 
+import Data.Text
 import GHC.Generics
 
-data MyType = MyType1 | MyType2 deriving stock (Show, Generic)
+data MyType = MyType {a :: Int, b :: Text} deriving stock (Show, Generic)

@@ -27,7 +27,7 @@ deriveConvertM
     ''Test2
     [ [|checkIfPositive . fromIntegral :: (MonadThrow m, Integral a) => a -> m Integer|]
     , [|pure . pack :: MonadThrow m => String -> m Text|]
-    , [|pure :: MonadThrow m => Bool -> m Bool|]
+    , [|pure :: MonadThrow m => a -> m a|]
     ]
 
 printSomeException :: SomeException -> IO ()
