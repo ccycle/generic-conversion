@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  LTS: '{{.LTS | default "20.3"}}'
+  LTS: '{{.LTS | default "20.11"}}'
   BUILD_ARGS: '{{.BUILD_ARGS | default "-O0"}}'
   TARGETS: '{{.TARGETS}}'
   GLOBAL_FLAGS: '{{.GLOBAL_FLAGS}}'

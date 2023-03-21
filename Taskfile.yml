@@ -4,5 +4,5 @@ includes:
   hs:
     taskfile: Taskfile-haskell.yml
     vars:
-      LTS: "20.3"
-      GLOBAL_FLAGS: '{{.GLOBAL_FLAGS | default "--store-dir=~/.cabal/nix/store"}}'
+      LTS: '{{.LTS | default "20.11"}}'
+      GLOBAL_FLAGS: '{{.GLOBAL_FLAGS | default "--store-dir=$HOME/.cabal/nix/store"}}'
