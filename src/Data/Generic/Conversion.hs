@@ -53,7 +53,6 @@ instance (Generic a, Generic b, GConvert (Rep a) (Rep b)) => Convert a (FromGene
 newtype FromFunctor f a b = FromFunctor (f b)
 instance (Functor f, Convert a b) => Convert (f a) (FromFunctor f a b) where
     convert = FromFunctor . fmap convert
-
 deriving via (FromFunctor [] a b) instance (Convert a b) => Convert [a] [b]
 deriving via (FromFunctor Maybe a b) instance (Convert a b) => Convert (Maybe a) (Maybe b)
 deriving via (FromFunctor (Either e) a b) instance (Convert a b) => Convert (Either e a) (Either e b)
@@ -156,6 +155,12 @@ instance (ConvertCustom a b a b) => Convert a (FromCustom a b) where
 
 instance ConvertCustom d1 d2 a a where
     convertCustom _ = id
+
+instance (Functor f, ConvertCustom d1 d2 a b) => ConvertCustom d1 d2 (f a) (FromFunctor f a b) where
+    convertCustom proxy = FromFunctor . fmap (convertCustom proxy)
+deriving via (FromFunctor [] a b) instance (ConvertCustom d1 d2 a b) => ConvertCustom d1 d2 [a] [b]
+deriving via (FromFunctor Maybe a b) instance (ConvertCustom d1 d2 a b) => ConvertCustom d1 d2 (Maybe a) (Maybe b)
+deriving via (FromFunctor (Either e) a b) instance (ConvertCustom d1 d2 a b) => ConvertCustom d1 d2 (Either e a) (Either e b)
 
 class GConvertCustom d1 d2 f g where
     gconvertCustom :: Proxy2 d1 d2 -> f a -> g a

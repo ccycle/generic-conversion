@@ -17,8 +17,8 @@ import GHC.Natural
 
 newtype NewInteger = NewInteger Integer deriving stock (Show)
 
-data Test1 = Test1 {a1 :: Int, b1 :: String, c1 :: Bool, d1 :: Natural} deriving stock (Show, Generic)
-data Test2 = Test2 {a2 :: NewInteger, b2 :: Text, c2 :: Bool, d2 :: NewInteger} deriving stock (Show, Generic)
+data Test1 = Test1 {a1 :: Int, b1 :: String, c1 :: Bool, d1 :: Maybe Natural} deriving stock (Show, Generic)
+data Test2 = Test2 {a2 :: NewInteger, b2 :: Text, c2 :: Bool, d2 :: Maybe NewInteger} deriving stock (Show, Generic)
 
 -- `deriveConvertFromAnyclass` also works (requires `DeriveAnyClass` instead of `DerivingVia`)
 deriveConvert
@@ -29,7 +29,7 @@ deriveConvert
     ]
 
 unit_convertFromTest1ToTest2TH :: IO ()
-unit_convertFromTest1ToTest2TH = print (convert (Test1{a1 = 1, b1 = "a", c1 = True, d1 = 1}) :: Test2)
+unit_convertFromTest1ToTest2TH = print (convert (Test1{a1 = 1, b1 = "a", c1 = True, d1 = Just 1}) :: Test2)
 
 deriveConvert
     ''Test2
@@ -39,7 +39,7 @@ deriveConvert
     ]
 
 unit_convertFromTest2ToTest1TH :: IO ()
-unit_convertFromTest2ToTest1TH = print (convert (Test2{a2 = NewInteger 1, b2 = pack "a", c2 = True, d2 = NewInteger 1}) :: Test1)
+unit_convertFromTest2ToTest1TH = print (convert (Test2{a2 = NewInteger 1, b2 = pack "a", c2 = True, d2 = Just (NewInteger 1)}) :: Test1)
 
 data SumTest1 = A1 | B1 | C1 deriving stock (Show, Generic)
 data SumTest2 = A2 | B2 | C2 deriving stock (Show, Generic)
